@@ -1,0 +1,22 @@
+name "tinyredis_util"
+description "Low level utility functionality"
+authors "Orfeo Da Viá"
+copyright "Copyright © 2019, Microline"
+license "Microline"
+targetType "library"
+
+dependency "tinyredis" version="~>2.2.0"
+/*dependency "vibe-d:data" version="~>0.8.4"*/
+
+configuration "library" {
+   targetType "library"
+}
+
+configuration "unittest" {
+   targetName "test-runner"
+   mainSourceFile "tests/app.d"
+   targetType "executable"
+   sourcePaths "tests"
+   dependency "unit-threaded" version="~>0.8.0"
+   preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f tests/app.d"
+}

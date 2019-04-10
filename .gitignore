@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/tinyredis-util
+tinyredis-util.so
+tinyredis-util.dylib
+tinyredis-util.dll
+tinyredis-util.a
+tinyredis-util.lib
+tinyredis-util-test-*
+*.exe
+*.o
+*.obj
+*.lst
+test-runner
+libtinyredis_util.a
