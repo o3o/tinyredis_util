@@ -17,6 +17,6 @@ configuration "unittest" {
    mainSourceFile "tests/app.d"
    targetType "executable"
    sourcePaths "tests"
-   dependency "unit-threaded" version="~>0.8.0"
+   dependency "unit-threaded" version="~>0.9.3"
    preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f tests/app.d"
 }
