@@ -1,7 +1,6 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"tinyredis": "2.2.0",
-		"unit-threaded": "0.9.3"
+		"tinyredis": "2.2.0"
 	}
 }

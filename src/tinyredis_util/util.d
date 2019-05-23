@@ -2,8 +2,6 @@ module tinyredis_util.util;
 
 import tinyredis : Redis, Response;
 
-version (unittest) import unit_threaded;
-
 /**
  * Set a Redis variable.
  *
@@ -65,6 +63,212 @@ T get(T)(Redis redis, string key) {
    }
 }
 
+@("getdouble")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", 3.14);
+   redis.send("SET", "delete:me", 3.15);
+   assert(redis.get!string("delete_me") == "3.14");
+   assert(redis.get!int("delete_me") == 3);
+   assert(redis.get!double("delete_me") == 3.14);
+   assert(redis.get!bool("delete_me"));
+
+   assert(redis.get!string("delete:me") == "3.15");
+   assert(redis.get!int("delete:me") == 3);
+   assert(redis.get!double("delete:me") == 3.15);
+   assert(redis.get!bool("delete:me"));
+
+   redis.send("SET", "delete_me", 0.0);
+   assert(redis.get!string("delete_me") == "0");
+   assert(redis.get!int("delete_me") == 0);
+   assert(redis.get!double("delete_me") == 0.);
+   assert(!redis.get!bool("delete_me"));
+
+   redis.send("DEL", "delete_me");
+   assert(redis.get!double("delete_me") == 0.);
+
+   redis.send("SET", "not_a_num", double.nan);
+
+   import std.math : isNaN;
+   assert(redis.get!double("not_a_num").isNaN);
+}
+
+@("getint")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", 42);
+   assert(redis.get!string("delete_me") == "42");
+   assert(redis.get!int("delete_me") == 42);
+   assert(redis.get!uint("delete_me") == 42);
+   assert(redis.get!long("delete_me") == 42L);
+   assert(redis.get!double("delete_me") == 42.);
+   assert(redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", 0);
+   assert(redis.get!string("delete_me") == "0");
+   assert(redis.get!int("delete_me") == 0);
+   assert(redis.get!long("delete_me") == 0L);
+   assert(redis.get!double("delete_me") == 0.);
+   assert(!redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", -42);
+   assert(redis.get!string("delete_me") == "-42");
+   assert(redis.get!int("delete_me") == -42);
+   //redis.get!uint("delete_me") == 42); overflow
+   assert(redis.get!long("delete_me") == -42L);
+   assert(redis.get!double("delete_me") == -42.);
+   assert(redis.get!bool("delete_me"));
+}
+
+@("getnull")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   assert(redis.get!string("none") == "");
+   assert(redis.get!int("none") == 0);
+   assert(redis.get!uint("none") == 0);
+   assert(redis.get!long("none") == 0L);
+   assert(redis.get!double("none") == 0.);
+   assert(!redis.get!bool("none"));
+}
+
+@("getuint")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "my_uint", cast(uint)42);
+   assert(redis.get!string("my_uint") == "42");
+   assert(redis.get!uint("my_uint") == 42);
+   assert(redis.get!int("my_uint") == 42);
+   assert(redis.get!long("my_uint") == 42L);
+   assert(redis.get!double("my_uint") == 42.);
+   assert(redis.get!bool("my_uint"));
+
+   redis.send("SET", "my_uint", cast(uint)0);
+   assert(redis.get!string("my_uint") == "0");
+   assert(redis.get!int("my_uint") == 0);
+   assert(redis.get!long("my_uint") == 0L);
+   assert(redis.get!double("my_uint") == 0.);
+   assert(!redis.get!bool("my_uint"));
+}
+
+@("getlong")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", 42L);
+   assert(redis.get!string("delete_me") == "42");
+   assert(redis.get!int("delete_me") == 42);
+   assert(redis.get!long("delete_me") == 42L);
+   assert(redis.get!double("delete_me") == 42.);
+   assert(redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", 0L);
+   assert(redis.get!string("delete_me") == "0");
+   assert(redis.get!int("delete_me") == 0);
+   assert(redis.get!long("delete_me") == 0L);
+   assert(redis.get!double("delete_me") == 0.);
+   assert(!redis.get!bool("delete_me"));
+}
+
+@("getbool")
+unittest {
+   Redis redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", true);
+   assert(redis.get!string("delete_me") == "true");
+   assert(redis.get!int("delete_me") == 1);
+   assert(redis.get!long("delete_me") == 1L);
+   assert(redis.get!double("delete_me") == 1.);
+   assert(redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", false);
+   assert(redis.get!string("delete_me") == "false");
+   assert(redis.get!int("delete_me") == 0);
+   assert(redis.get!long("delete_me") == 0L);
+   assert(redis.get!double("delete_me") == 0.);
+   assert(!redis.get!bool("delete_me"));
+}
+@("getstring")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", "true");
+   assert(redis.get!string("delete_me") == "true");
+   assert(redis.get!int("delete_me") == 1);
+   assert(redis.get!long("delete_me") == 1L);
+   assert(redis.get!double("delete_me") == 1.);
+   assert(redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", "false");
+   assert(redis.get!string("delete_me") == "false");
+   assert(redis.get!int("delete_me") == 0);
+   assert(redis.get!long("delete_me") == 0L);
+   assert(redis.get!double("delete_me") == 0.);
+   assert(!redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", "cul");
+   assert(redis.get!string("delete_me") == "cul");
+   assert(redis.get!int("delete_me") == 0);
+   assert(redis.get!long("delete_me") == 0L);
+   assert(redis.get!double("delete_me") == 0.);
+   assert(!redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", "42");
+   assert(redis.get!string("delete_me") == "42");
+   assert(redis.get!int("delete_me") == 42);
+   assert(redis.get!long("delete_me") == 42L);
+   assert(redis.get!double("delete_me") == 42.);
+   assert(redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", "3.14");
+   assert(redis.get!string("delete_me") == "3.14");
+   assert(redis.get!int("delete_me") == 3);
+   assert(redis.get!double("delete_me") == 3.14);
+   assert(redis.get!bool("delete_me"));
+
+   redis.send("SET", "delete_me", "3,14");
+   assert(redis.get!string("delete_me") == "3,14");
+   assert(redis.get!int("delete_me") == 0);
+   assert(redis.get!double("delete_me") == 0.);
+   assert(!redis.get!bool("delete_me"));
+}
+
+@("gettime")
+unittest {
+   import std.datetime : DateTime;
+   import std.datetime.systime : SysTime;
+
+   auto redis = new Redis();
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   enum UT = 1_552_320_073;
+   redis.send("SET", "ut", UT);
+   auto expected = SysTime(DateTime(2019, 3, 11, 17, 01, 13));
+
+   assert(redis.get!SysTime("ut") == expected);
+
+   redis.set!SysTime("ut1", expected);
+   assert(redis.get!long("ut1") == UT);
+}
+
 /**
  * Safe convert Response
  */
@@ -98,6 +302,106 @@ T respTo(T)(Response response) {
    } else {
       return response.toString.to!T;
    }
+}
+
+@("respTobool")
+unittest {
+   Redis redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", true);
+   assert(redis.send("GET", "delete_me").respTo!string == "true");
+   assert(redis.send("GET", "delete_me").respTo!int == 1);
+   assert(redis.send("GET", "delete_me").respTo!long == 1L);
+   assert(redis.send("GET", "delete_me").respTo!double == 1.);
+   assert(redis.send("GET", "delete_me").respTo!bool);
+
+   redis.send("SET", "delete_me", false);
+   assert(redis.send("GET", "delete_me").respTo!string == "false");
+   assert(redis.send("GET", "delete_me").respTo!int == 0);
+   assert(redis.send("GET", "delete_me").respTo!long == 0L);
+   assert(redis.send("GET", "delete_me").respTo!double == 0.);
+   assert(!redis.send("GET", "delete_me").respTo!bool);
+}
+
+@("respToString")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", "true");
+   assert(redis.send("GET", "delete_me").respTo!string == "true");
+   assert(redis.send("GET", "delete_me").respTo!int == 1);
+   assert(redis.send("GET", "delete_me").respTo!long == 1L);
+   assert(redis.send("GET", "delete_me").respTo!double == 1.);
+   assert(redis.send("GET", "delete_me").respTo!bool);
+
+   redis.send("SET", "delete_me", "false");
+   assert(redis.send("GET", "delete_me").respTo!string == "false");
+   assert(redis.send("GET", "delete_me").respTo!int == 0);
+   assert(redis.send("GET", "delete_me").respTo!long == 0L);
+   assert(redis.send("GET", "delete_me").respTo!double == 0.);
+   assert(!redis.send("GET", "delete_me").respTo!bool);
+
+   redis.send("SET", "delete_me", "cul");
+   assert(redis.send("GET", "delete_me").respTo!string == "cul");
+   assert(redis.send("GET", "delete_me").respTo!int == 0);
+   assert(redis.send("GET", "delete_me").respTo!long == 0L);
+   assert(redis.send("GET", "delete_me").respTo!double == 0.);
+   assert(!redis.send("GET", "delete_me").respTo!bool);
+
+   redis.send("SET", "delete_me", "42");
+   assert(redis.send("GET", "delete_me").respTo!string == "42");
+   assert(redis.send("GET", "delete_me").respTo!int == 42);
+   assert(redis.send("GET", "delete_me").respTo!long == 42L);
+   assert(redis.send("GET", "delete_me").respTo!double == 42.);
+   assert(redis.send("GET", "delete_me").respTo!bool);
+
+   redis.send("SET", "delete_me", "3.14");
+   assert(redis.send("GET", "delete_me").respTo!string == "3.14");
+   assert(redis.send("GET", "delete_me").respTo!int == 3);
+   assert(redis.send("GET", "delete_me").respTo!double == 3.14);
+   assert(redis.send("GET", "delete_me").respTo!bool);
+
+   redis.send("SET", "delete_me", "3,14");
+   assert(redis.send("GET", "delete_me").respTo!string == "3,14");
+   assert(redis.send("GET", "delete_me").respTo!int == 0);
+   assert(redis.send("GET", "delete_me").respTo!double == 0.);
+   assert(!redis.send("GET", "delete_me").respTo!bool);
+}
+
+
+@("respToDouble")
+unittest {
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", 3.14);
+   assert(redis.send("GET", "delete_me").respTo!string == "3.14");
+   assert(redis.send("GET", "delete_me").respTo!int == 3);
+   assert(redis.send("GET", "delete_me").respTo!double == 3.14);
+   assert(redis.send("GET", "delete_me").respTo!bool);
+
+   redis.send("SET", "delete:me", 3.15);
+   assert(redis.send("GET", "delete:me").respTo!string == "3.15");
+   assert(redis.send("GET", "delete:me").respTo!int == 3);
+   assert(redis.send("GET", "delete:me").respTo!double == 3.15);
+   assert(redis.send("GET", "delete:me").respTo!bool);
+
+   redis.send("SET", "delete_me", 0.0);
+   assert(redis.send("GET", "delete_me").respTo!string == "0");
+   assert(redis.send("GET", "delete_me").respTo!int == 0);
+   assert(redis.send("GET", "delete_me").respTo!double == 0.);
+   assert(!redis.send("GET", "delete_me").respTo!bool);
+   redis.send("DEL", "delete_me");
+   assert(redis.send("GET", "delete_me").respTo!double == 0.);
+
+   redis.send("SET", "not_a_num", double.nan);
+   import std.math : isNaN;
+   assert(redis.send("GET", "not_a_num").respTo!double.isNaN);
 }
 
 /**
@@ -166,15 +470,15 @@ unittest {
    };
 
    t.copyToRedis!DummyData(redis, "cu_");
-   redis.get!string("cu_condition").shouldEqual("aa");
-   redis.get!string("cu_logger_name").shouldEqual("DD");
-   redis.get!bool("cu_visible").shouldBeTrue;
-   redis.get!int("cu_no_of_iteration").shouldEqual(42);
-   redis.get!double("cu_duration").shouldEqual(19.64);
+   assert(redis.get!string("cu_condition") == "aa");
+   assert(redis.get!string("cu_logger_name") == "DD");
+   assert(redis.get!bool("cu_visible"));
+   assert(redis.get!int("cu_no_of_iteration") == 42);
+   assert(redis.get!double("cu_duration") == 19.64);
    // gli array sono ignorati
-   redis.get!string("lists").shouldEqual("");
+   assert(redis.get!string("lists") == "");
 
-   redis.get!string("adasdadwerwerwerwer").shouldEqual("");
+   assert(redis.get!string("adasdadwerwerwerwer") == "");
 }
 
 /**
@@ -240,11 +544,11 @@ unittest {
 
    DummyData dummy;
    redis.copyToStruct(dummy, "cu_");
-   dummy.condition.should == "aa";
-   dummy.loggerName.shouldEqual("DD");
-   dummy.noOfIteration.shouldEqual(42);
-   dummy.duration.shouldEqual(19.64);
-   dummy.lists.length.shouldEqual(0);
+   assert(dummy.condition == "aa");
+   assert(dummy.loggerName == "DD");
+   assert(dummy.noOfIteration == 42);
+   assert(dummy.duration == 19.64);
+   assert(dummy.lists.length == 0);
 }
 
 /**
@@ -277,21 +581,21 @@ string camelCaseToSnake(in string s) @safe pure {
 
 @("snake")
 unittest {
-   "ABCD".camelCaseToSnake.shouldEqual("abcd");
-   "A0CD".camelCaseToSnake.shouldEqual("a0_cd");
-   "aBcD".camelCaseToSnake.shouldEqual("a_bc_d");
-   "aBcDE".camelCaseToSnake.shouldEqual("a_bc_de");
-   "a0CDe".camelCaseToSnake.shouldEqual("a0_c_de");
-   "abCDe".camelCaseToSnake.shouldEqual("ab_c_de");
-   "aBc1".camelCaseToSnake.shouldEqual("a_bc1");
-   "xABy".camelCaseToSnake.shouldEqual("x_a_by");
-   "caccaPipiPuzzetta".camelCaseToSnake.shouldEqual("cacca_pipi_puzzetta");
-   "vacuum0PThreshold".camelCaseToSnake.shouldEqual("vacuum0_p_threshold");
-   "vacuum0PressThreshold".camelCaseToSnake.shouldEqual("vacuum0_press_threshold");
-   "".camelCaseToSnake.shouldEqual("");
+   assert("ABCD".camelCaseToSnake == "abcd");
+   assert("A0CD".camelCaseToSnake == "a0_cd");
+   assert("aBcD".camelCaseToSnake == "a_bc_d");
+   assert("aBcDE".camelCaseToSnake == "a_bc_de");
+   assert("a0CDe".camelCaseToSnake == "a0_c_de");
+   assert("abCDe".camelCaseToSnake == "ab_c_de");
+   assert("aBc1".camelCaseToSnake == "a_bc1");
+   assert("xABy".camelCaseToSnake == "x_a_by");
+   assert("caccaPipiPuzzetta".camelCaseToSnake == "cacca_pipi_puzzetta");
+   assert("vacuum0PThreshold".camelCaseToSnake == "vacuum0_p_threshold");
+   assert("vacuum0PressThreshold".camelCaseToSnake == "vacuum0_press_threshold");
+   assert("".camelCaseToSnake == "");
 
-   "cop3pAvg".camelCaseToSnake.shouldEqual("cop3p_avg");
-   "cop3p".camelCaseToSnake.shouldEqual("cop3p");
-   "vSupply3pMeas".camelCaseToSnake.shouldEqual("v_supply3p_meas");
-   "pDisAtTCondSp".camelCaseToSnake.shouldEqual("p_dis_at_t_cond_sp");
+   assert("cop3pAvg".camelCaseToSnake == "cop3p_avg");
+   assert("cop3p".camelCaseToSnake == "cop3p");
+   assert("vSupply3pMeas".camelCaseToSnake == "v_supply3p_meas");
+   assert("pDisAtTCondSp".camelCaseToSnake == "p_dis_at_t_cond_sp");
 }
