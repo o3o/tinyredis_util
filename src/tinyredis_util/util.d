@@ -22,6 +22,33 @@ void set(T)(Redis redis, string key, T value) {
 }
 
 /**
+ * psetex works exactly like SETEX with the sole difference that the expire time is specified in milliseconds instead of seconds.
+ *
+ * Params:
+ *  redis = Database
+ *  key = Variable name
+ *  milliseconds = Expire time
+ *  value = Variable value
+ */
+void psetex(T)(Redis redis, string key, int milliseconds, T value) {
+   redis.send("PSETEX", key, milliseconds, value);
+}
+/**
+ * Set key to hold the string value and set key to timeout after a given number of seconds
+ *
+ * Params:
+ *  redis = Database
+ *  key = Variable name
+ *  seconds = Expire time
+ *  value = Variable value
+ */
+void setex(T)(Redis redis, string key, int seconds, T value) {
+   redis.send("SETEX", key, seconds, value);
+}
+
+
+
+/**
  * Get a Redis variable
  *
  * Params:
@@ -269,6 +296,40 @@ unittest {
    assert(redis.get!long("ut1") == UT);
 }
 
+
+bool getBit(Redis redis, string key, uint offset) {
+   return redis.send("GETBIT", key, offset).toBool;
+}
+
+void setBit(Redis redis, string key, uint offset) {
+   redis.send("SETBIT", key, offset, 1);
+}
+
+void clearBit(Redis redis, string key, uint offset) {
+   redis.send("SETBIT", key, offset, 0);
+}
+
+unittest {
+   auto redis = new Redis();
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.setBit("bf", 3);
+   assert(redis.getBit("bf", 3));
+
+   redis.setBit("bf", 0);
+   assert(redis.getBit("bf", 0));
+   assert(!redis.getBit("bf", 1));
+   assert(!redis.getBit("bf", 2));
+   assert(redis.getBit("bf", 3));
+
+   redis.clearBit("bf", 0);
+   assert(!redis.getBit("bf", 0));
+
+   redis.clearBit("bf", 3);
+   assert(!redis.getBit("bf", 3));
+}
+
 /**
  * Safe convert Response
  */
@@ -405,7 +466,7 @@ unittest {
 }
 
 /**
-* Copy a structure into Redis variables.
+  * Copy a structure into Redis variables.
   *
   * Examples:
   * If the structure is:
@@ -413,7 +474,7 @@ unittest {
   * struct Foo {
   *   int intParm;
   *   string stringParm;
-  *  bool is60Hz
+  *   bool is60Hz
   * }
   * --------------------
   *
