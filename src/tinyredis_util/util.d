@@ -47,7 +47,6 @@ void setex(T)(Redis redis, string key, int seconds, T value) {
 }
 
 
-
 /**
  * Get a Redis variable
  *
@@ -80,7 +79,7 @@ T get(T)(Redis redis, string key) {
       if (reply.isNumeric) {
          return reply.to!(double) != 0.;
       } else {
-         return reply == "true";
+         return reply == "true" || reply == "t";
       }
    } else static if (is(T == SysTime)) {
       long unixTime = redis.get!long(key);
@@ -192,6 +191,7 @@ unittest {
 @("getlong")
 unittest {
    auto redis = new Redis("localhost", 6379);
+
    redis.send("SELECT", 1);
    redis.send("FLUSHDB");
 
@@ -229,7 +229,15 @@ unittest {
    assert(redis.get!long("delete_me") == 0L);
    assert(redis.get!double("delete_me") == 0.);
    assert(!redis.get!bool("delete_me"));
+
+   redis.send("SET", "bool_as_string", "true");
+   assert(redis.get!bool("bool_as_string"));
+   redis.send("SET", "bool_as_string", "t");
+   assert(redis.get!bool("bool_as_string"));
+   redis.send("SET", "bool_as_string", "f");
+   assert(!redis.get!bool("bool_as_string"));
 }
+
 @("getstring")
 unittest {
    auto redis = new Redis("localhost", 6379);
@@ -301,6 +309,15 @@ bool getBit(Redis redis, string key, uint offset) {
    return redis.send("GETBIT", key, offset).toBool;
 }
 
+/**
+ * Sets or clears the bit at offset in the string value stored at key.
+ * The bit is either set or cleared depending on value, which can be either 0 or 1.
+ *
+ * Params:
+ *  redis = Database
+ *  key = Key
+ *  offset = Bit to set or reset
+ */
 void setBit(Redis redis, string key, uint offset) {
    redis.send("SETBIT", key, offset, 1);
 }
@@ -466,35 +483,35 @@ unittest {
 }
 
 /**
-  * Copy a structure into Redis variables.
-  *
-  * Examples:
-  * If the structure is:
-  * --------------------
-  * struct Foo {
-  *   int intParm;
-  *   string stringParm;
-  *   bool is60Hz
-  * }
-  * --------------------
-  *
-  * Then
-  * --------------------
-  * Foo foo;
-  * copyToRedis!Foo(foo, redis, "f:")
-  * --------------------
-  *
+ * Copy a structure into Redis variables.
+ *
+ * Examples:
+ * If the structure is:
+ * --------------------
+ * struct Foo {
+ *   int intParm;
+ *   string stringParm;
+ *   bool is60Hz
+ * }
+ * --------------------
+ *
+ * Then
+ * --------------------
+ * Foo foo;
+ * copyToRedis!Foo(foo, redis, "f:")
+ * --------------------
+ *
  * set these redis variables:
-  *
-  * - f:int_parm
-  * - f:string_parm
-  * - f:is60_hz ATTENTION between letter and number does not add underscore
-  *
-  * Params:
-  * source = Structure to copy
-  * target = Database in which to copy the structure
-  * prefix = Prefix to be added to the structure members
-*/
+ *
+ * - f:int_parm
+ * - f:string_parm
+ * - f:is60_hz ATTENTION between letter and number does not add underscore
+ *
+ * Params:
+ * source = Structure to copy
+ * target = Database in which to copy the structure
+ * prefix = Prefix to be added to the structure members
+ */
 void copyToRedis(T)(T source, Redis target, string prefix) {
    import std.traits : hasMember, isBasicType, isSomeString, FieldNameTuple;
 
@@ -526,7 +543,7 @@ unittest {
    }
 
    DummyData t = {
-   condition:
+condition:
       "aa", loggerName : "DD", visible : true, noOfIteration : 42, duration : 19.64, lists : ["a", "b"]
    };
 
@@ -544,10 +561,10 @@ unittest {
 
 /**
  * Copy the values of the Redis variables into a structure.
-  *
-  * The names of the redis variables to be used are the names of the members in snake_case with optional prefix.
-  *
-  * If T is a structure:
+ *
+ * The names of the redis variables to be used are the names of the members in snake_case with optional prefix.
+ *
+ * If T is a structure:
  * --------------------
  * struct Foo {
  *   int fooName;
@@ -558,9 +575,9 @@ unittest {
  *
  *
  * Params:
-  * redis = Database from which to read the variables
-  * target = Structure that receives the values
-  * prefix = Prefix to be added to the variable names
+ * redis = Database from which to read the variables
+ * target = Structure that receives the values
+ * prefix = Prefix to be added to the variable names
  */
 void copyToStruct(T)(Redis redis, ref T target, string prefix) {
    import std.traits : hasMember;
@@ -628,16 +645,16 @@ string camelCaseToSnake(in string s) @safe pure {
    import std.conv : to;
 
    return s.enumerate.map!((t) {
-      if (isUpper(t.value)) {
+         if (isUpper(t.value)) {
          if (t.index > 0 && (isLower(s[t.index - 1]) || isDigit(s[t.index - 1]) || (t.index < s.length - 1 && isLower(s[t.index + 1])))) {
-            return "_" ~ t.value.toLower.to!string;
+         return "_" ~ t.value.toLower.to!string;
          } else {
-            return t.value.toLower.to!string;
+         return t.value.toLower.to!string;
          }
-      } else {
+         } else {
          return t.value.to!string;
-      }
-   }).join;
+         }
+         }).join;
 }
 
 @("snake")
