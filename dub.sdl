@@ -1,6 +1,6 @@
 name "tinyredis_util"
 description "Low level utility functionality"
-authors "Orfeo Da Viá"
+authors "Orfeo Da Vià"
 copyright "Copyright © 2019, Microline"
 license "Microline"
 targetType "library"

@@ -676,4 +676,6 @@ unittest {
    assert("cop3p".camelCaseToSnake == "cop3p");
    assert("vSupply3pMeas".camelCaseToSnake == "v_supply3p_meas");
    assert("pDisAtTCondSp".camelCaseToSnake == "p_dis_at_t_cond_sp");
+   assert("res8r1".camelCaseToSnake == "res8r1");
+   assert("pid00run".camelCaseToSnake == "pid00run");
 }
