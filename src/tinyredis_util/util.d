@@ -304,10 +304,10 @@ unittest {
    assert(redis.get!long("ut1") == UT);
 }
 
-
 bool getBit(Redis redis, string key, uint offset) {
    return redis.send("GETBIT", key, offset).toBool;
 }
+
 
 /**
  * Sets or clears the bit at offset in the string value stored at key.
@@ -318,12 +318,26 @@ bool getBit(Redis redis, string key, uint offset) {
  *  key = Key
  *  offset = Bit to set or reset
  */
-void setBit(Redis redis, string key, uint offset) {
-   redis.send("SETBIT", key, offset, 1);
+void setBit(Redis redis, string key, uint offset, bool value) {
+   redis.send("SETBIT", key, offset, value ? 1 : 0);
 }
 
-void clearBit(Redis redis, string key, uint offset) {
-   redis.send("SETBIT", key, offset, 0);
+/**
+ * Tests and sets (sets to 1) the bit.
+ */
+bool bts(Redis redis, string key, uint bitnum) {
+   bool b = redis.getBit(key, bitnum);
+   redis.send("SETBIT", key, bitnum, 1);
+   return b;
+}
+
+/**
+ * Tests and resets (sets to 0) the bit.
+ */
+bool btr(Redis redis, string key, uint bitnum) {
+   bool b = redis.getBit(key, bitnum);
+   redis.send("SETBIT", key, bitnum, 0);
+   return b;
 }
 
 unittest {
@@ -331,19 +345,19 @@ unittest {
    redis.send("SELECT", 1);
    redis.send("FLUSHDB");
 
-   redis.setBit("bf", 3);
+   redis.setBit("bf", 3, true);
    assert(redis.getBit("bf", 3));
 
-   redis.setBit("bf", 0);
+   redis.setBit("bf", 0, true);
    assert(redis.getBit("bf", 0));
    assert(!redis.getBit("bf", 1));
    assert(!redis.getBit("bf", 2));
    assert(redis.getBit("bf", 3));
 
-   redis.clearBit("bf", 0);
+   redis.btr("bf", 0);
    assert(!redis.getBit("bf", 0));
 
-   redis.clearBit("bf", 3);
+   redis.btr("bf", 3);
    assert(!redis.getBit("bf", 3));
 }
 
