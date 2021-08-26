@@ -1,6 +1,7 @@
 module tinyredis_util.util;
 
 import tinyredis : Redis, Response;
+import std.datetime.systime : SysTime;
 
 /**
  * Set a Redis variable.
@@ -11,8 +12,6 @@ import tinyredis : Redis, Response;
  *  value = Variable value
  */
 void set(T)(Redis redis, string key, T value) {
-   import std.datetime.systime : SysTime;
-
    static if (is(T == SysTime)) {
       long unixTime = value.toUnixTime!long;
       redis.send("SET", key, unixTime);
@@ -48,6 +47,22 @@ void setex(T)(Redis redis, string key, int seconds, T value) {
 
 
 /**
+ * Returns the value associated with field in the hash stored at key.
+ *
+ * Params:
+ *  redis = Database
+ *  key = Hash name
+ *  field = Field name
+ */
+T hget(T)(Redis redis, string key, string field) {
+   static if (commonType!T) {
+      string reply = redis.send!string("HGET", key, field);
+      return conv!(T)(reply);
+   } else {
+      return redis.send!(T)("HGET", key, field);
+   }
+}
+/**
  * Get a Redis variable
  *
  * Params:
@@ -55,19 +70,56 @@ void setex(T)(Redis redis, string key, int seconds, T value) {
  *  key = Variable name
  */
 T get(T)(Redis redis, string key) {
+   static if (commonType!T) {
+      string reply = redis.send!string("GET", key);
+      return conv!(T)(reply);
+   } else {
+      return redis.send!(T)("GET", key);
+   }
+}
+
+unittest {
+   Redis redis = new Redis();
+   redis.send("select", 1);
+   redis.send("flushdb");
+   redis.send("HMSET", "hh", "a", 10, "b", 11);
+   redis.send("HSET", "hh", "c", "12");
+   int h0 =  redis.hget!int("hh", "a");
+   assert(h0 == 10);
+
+   string h1=  redis.hget!string("hh", "c");
+   assert(h1 == "12");
+   string h2=  redis.hget!string("hh", "b");
+   assert(h2 == "11");
+}
+
+
+template commonType(T) {
+   enum commonType = (is(T == bool)
+                || is(T == float)
+                || is(T == double)
+                || is(T == short)
+                || is(T == int)
+                || is(T == long)
+                || is(T == uint)
+                || is(T == ulong)
+                || is(T == string)
+                || is(T == SysTime)
+                );
+}
+
+
+T conv(T)(string reply) if(commonType!T) {
    import std.conv : to;
    import std.string : isNumeric;
-   import std.datetime.systime : SysTime;
 
    static if (is(T == double) || (is(T == float))) {
-      string reply = redis.send!string("GET", key);
       if (reply.isNumeric) {
          return reply.to!(T);
       } else {
          return reply == "true" ? 1. : 0.;
       }
    } else static if ((is(T == int)) || (is(T == long)) || (is(T == uint)) || (is(T == ulong))) {
-      string reply = redis.send!string("GET", key);
       if (reply.isNumeric) {
          return reply.to!(double)
             .to!(T);
@@ -75,17 +127,18 @@ T get(T)(Redis redis, string key) {
          return reply == "true" ? 1 : 0;
       }
    } else static if (is(T == bool)) {
-      string reply = redis.send!string("GET", key);
       if (reply.isNumeric) {
          return reply.to!(double) != 0.;
       } else {
          return reply == "true" || reply == "t";
       }
+   } else static if (is(T == string)) {
+      return reply;
    } else static if (is(T == SysTime)) {
-      long unixTime = redis.get!long(key);
+      long unixTime = reply.to!(double).to!long;
       return SysTime.fromUnixTime(unixTime);
    } else {
-      return redis.send!(T)("GET", key);
+      assert(false);
    }
 }
 
