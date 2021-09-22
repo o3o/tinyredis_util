@@ -2,6 +2,7 @@ module tinyredis_util.util;
 
 import tinyredis : Redis, Response;
 import std.datetime.systime : SysTime;
+import std.experimental.logger;
 
 /**
  * Set a Redis variable.
@@ -112,6 +113,7 @@ template commonType(T) {
 T conv(T)(string reply) if(commonType!T) {
    import std.conv : to;
    import std.string : isNumeric;
+   import std.datetime : DateTime;
 
    static if (is(T == double) || (is(T == float))) {
       if (reply.isNumeric) {
@@ -135,8 +137,13 @@ T conv(T)(string reply) if(commonType!T) {
    } else static if (is(T == string)) {
       return reply;
    } else static if (is(T == SysTime)) {
-      long unixTime = reply.to!(double).to!long;
-      return SysTime.fromUnixTime(unixTime);
+      if (reply.isNumeric) {
+         long unixTime = reply.to!(double).to!long;
+         return SysTime.fromUnixTime(unixTime);
+      } else {
+         warning("empty datatime");
+         return SysTime(DateTime(1970, 1, 1, 1, 1, 1));
+      }
    } else {
       assert(false);
    }
@@ -144,6 +151,8 @@ T conv(T)(string reply) if(commonType!T) {
 
 @("getdouble")
 unittest {
+   import std.datetime : DateTime;
+
    auto redis = new Redis("localhost", 6379);
    redis.send("SELECT", 1);
    redis.send("FLUSHDB");
@@ -173,6 +182,12 @@ unittest {
 
    import std.math : isNaN;
    assert(redis.get!double("not_a_num").isNaN);
+
+   enum UT = 1_552_320_073;
+   redis.send("SET", "ut", UT);
+   auto expected = SysTime(DateTime(2019, 3, 11, 17, 01, 13));
+
+   assert(redis.get!SysTime("ut") == expected);
 }
 
 @("getint")
@@ -355,6 +370,9 @@ unittest {
 
    redis.set!SysTime("ut1", expected);
    assert(redis.get!long("ut1") == UT);
+   redis.send("SET", "ut", "");
+   auto epoch = SysTime(DateTime(1970, 1, 1, 1, 1, 1));
+   assert(redis.get!SysTime("ut") == epoch);
 }
 
 bool getBit(Redis redis, string key, uint offset) {
