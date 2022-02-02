@@ -47,7 +47,6 @@ void setex(T)(Redis redis, string key, int seconds, T value) {
    redis.send("SETEX", key, seconds, value);
 }
 
-
 /**
  * Returns the value associated with field in the hash stored at key.
  *
@@ -87,28 +86,18 @@ unittest {
    redis.send("flushdb");
    redis.send("HMSET", "hh", "a", 10, "b", 11);
    redis.send("HSET", "hh", "c", "12");
-   int h0 =  redis.hget!int("hh", "a");
+   int h0 = redis.hget!int("hh", "a");
    assert(h0 == 10);
 
-   string h1=  redis.hget!string("hh", "c");
+   string h1 = redis.hget!string("hh", "c");
    assert(h1 == "12");
-   string h2=  redis.hget!string("hh", "b");
+   string h2 = redis.hget!string("hh", "b");
    assert(h2 == "11");
 }
 
-
 template commonType(T) {
-   enum commonType = (is(T == bool)
-                || is(T == float)
-                || is(T == double)
-                || is(T == short)
-                || is(T == int)
-                || is(T == long)
-                || is(T == uint)
-                || is(T == ulong)
-                || is(T == string)
-                || is(T == SysTime)
-                );
+   enum commonType = (is(T == bool) || is(T == float) || is(T == double) || is(T == short) || is(T == int)
+            || is(T == long) || is(T == uint) || is(T == ulong) || is(T == string) || is(T == SysTime));
 }
 
 /**
@@ -144,7 +133,8 @@ T conv(T)(string input) if (commonType!T) {
       return input;
    } else static if (is(T == SysTime)) {
       if (input.isNumeric) {
-         long unixTime = input.to!(double).to!long;
+         long unixTime = input.to!(double)
+            .to!long;
          return SysTime.fromUnixTime(unixTime);
       } else {
          warning("empty datatime");
@@ -187,6 +177,7 @@ unittest {
    redis.send("SET", "not_a_num", double.nan);
 
    import std.math : isNaN;
+
    assert(redis.get!double("not_a_num").isNaN);
 
    enum UT = 1_552_320_073;
@@ -389,7 +380,6 @@ bool getBit(Redis redis, string key, uint offset) {
    return redis.send("GETBIT", key, offset).toBool;
 }
 
-
 /**
  * Sets or clears the bit at offset in the string value stored at key.
  * The bit is either set or cleared depending on value, which can be either 0 or 1.
@@ -550,7 +540,6 @@ unittest {
    assert(!redis.send("GET", "delete_me").respTo!bool);
 }
 
-
 @("respToDouble")
 unittest {
    auto redis = new Redis("localhost", 6379);
@@ -579,6 +568,7 @@ unittest {
 
    redis.send("SET", "not_a_num", double.nan);
    import std.math : isNaN;
+
    assert(redis.send("GET", "not_a_num").respTo!double.isNaN);
 }
 
@@ -644,8 +634,7 @@ unittest {
    }
 
    DummyData t = {
-condition:
-      "aa", loggerName : "DD", visible : true, noOfIteration : 42, duration : 19.64, lists : ["a", "b"]
+      condition: "aa", loggerName: "DD", visible: true, noOfIteration: 42, duration: 19.64, lists: ["a", "b"]
    };
 
    t.copyToRedis!DummyData(redis, "cu_");
@@ -747,16 +736,16 @@ string camelCaseToSnake(in string s) @safe pure {
    import std.conv : to;
 
    return s.enumerate.map!((t) {
-         if (isUpper(t.value)) {
+      if (isUpper(t.value)) {
          if (t.index > 0 && (isLower(s[t.index - 1]) || isDigit(s[t.index - 1]) || (t.index < s.length - 1 && isLower(s[t.index + 1])))) {
-         return "_" ~ t.value.toLower.to!string;
+            return "_" ~ t.value.toLower.to!string;
          } else {
-         return t.value.toLower.to!string;
+            return t.value.toLower.to!string;
          }
-         } else {
+      } else {
          return t.value.to!string;
-         }
-         }).join;
+      }
+   }).join;
 }
 
 ///
