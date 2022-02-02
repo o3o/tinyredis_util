@@ -15,3 +15,8 @@ tinyredis-util-test-*
 *.lst
 test-runner
 libtinyredis_util.a
+.chglog/
+skeleton.html
+tinyredis_util-test-library
+.vim-bookmarks
+generated-docs/

@@ -33,6 +33,7 @@ void set(T)(Redis redis, string key, T value) {
 void psetex(T)(Redis redis, string key, int milliseconds, T value) {
    redis.send("PSETEX", key, milliseconds, value);
 }
+
 /**
  * Set key to hold the string value and set key to timeout after a given number of seconds
  *
@@ -63,6 +64,7 @@ T hget(T)(Redis redis, string key, string field) {
       return redis.send!(T)("HGET", key, field);
    }
 }
+
 /**
  * Get a Redis variable
  *
@@ -109,36 +111,40 @@ template commonType(T) {
                 );
 }
 
-
-T conv(T)(string reply) if(commonType!T) {
+/**
+ * Convert a string into T type.
+ *
+ *
+ */
+T conv(T)(string input) if (commonType!T) {
    import std.conv : to;
    import std.string : isNumeric;
    import std.datetime : DateTime;
 
    static if (is(T == double) || (is(T == float))) {
-      if (reply.isNumeric) {
-         return reply.to!(T);
+      if (input.isNumeric) {
+         return input.to!(T);
       } else {
-         return reply == "true" ? 1. : 0.;
+         return input == "true" ? 1. : 0.;
       }
    } else static if ((is(T == int)) || (is(T == long)) || (is(T == uint)) || (is(T == ulong))) {
-      if (reply.isNumeric) {
-         return reply.to!(double)
+      if (input.isNumeric) {
+         return input.to!(double)
             .to!(T);
       } else {
-         return reply == "true" ? 1 : 0;
+         return input == "true" ? 1 : 0;
       }
    } else static if (is(T == bool)) {
-      if (reply.isNumeric) {
-         return reply.to!(double) != 0.;
+      if (input.isNumeric) {
+         return input.to!(double) != 0.;
       } else {
-         return reply == "true" || reply == "t";
+         return input == "true" || input == "t";
       }
    } else static if (is(T == string)) {
-      return reply;
+      return input;
    } else static if (is(T == SysTime)) {
-      if (reply.isNumeric) {
-         long unixTime = reply.to!(double).to!long;
+      if (input.isNumeric) {
+         long unixTime = input.to!(double).to!long;
          return SysTime.fromUnixTime(unixTime);
       } else {
          warning("empty datatime");
@@ -201,6 +207,8 @@ unittest {
    assert(redis.get!int("delete_me") == 42);
    assert(redis.get!uint("delete_me") == 42);
    assert(redis.get!long("delete_me") == 42L);
+   assert(redis.get!ulong("delete_me") == 42uL);
+   assert(redis.get!size_t("delete_me") == 42uL);
    assert(redis.get!double("delete_me") == 42.);
    assert(redis.get!bool("delete_me"));
 
@@ -374,7 +382,9 @@ unittest {
    auto epoch = SysTime(DateTime(1970, 1, 1, 1, 1, 1));
    assert(redis.get!SysTime("ut") == epoch);
 }
-
+/**
+ * Returns the bit value at offset in the string value stored at key.
+ */
 bool getBit(Redis redis, string key, uint offset) {
    return redis.send("GETBIT", key, offset).toBool;
 }
@@ -395,6 +405,8 @@ void setBit(Redis redis, string key, uint offset, bool value) {
 
 /**
  * Tests and sets (sets to 1) the bit.
+ *
+ * Internally use `SETBIT` function.
  */
 bool bts(Redis redis, string key, uint bitnum) {
    bool b = redis.getBit(key, bitnum);
@@ -404,6 +416,8 @@ bool bts(Redis redis, string key, uint bitnum) {
 
 /**
  * Tests and resets (sets to 0) the bit.
+ *
+ * Internally use `SETBIT` function.
  */
 bool btr(Redis redis, string key, uint bitnum) {
    bool b = redis.getBit(key, bitnum);
@@ -411,6 +425,7 @@ bool btr(Redis redis, string key, uint bitnum) {
    return b;
 }
 
+///
 unittest {
    auto redis = new Redis();
    redis.send("SELECT", 1);
@@ -572,25 +587,26 @@ unittest {
  *
  * Examples:
  * If the structure is:
- * --------------------
+ * ```
  * struct Foo {
  *   int intParm;
  *   string stringParm;
  *   bool is60Hz
  * }
- * --------------------
+ * ```
  *
  * Then
- * --------------------
+ * ```
  * Foo foo;
  * copyToRedis!Foo(foo, redis, "f:")
- * --------------------
+ * ```
  *
  * set these redis variables:
- *
- * - f:int_parm
- * - f:string_parm
- * - f:is60_hz ATTENTION between letter and number does not add underscore
+ * $(LIST
+ *   * f:int_parm
+ *   * f:string_parm
+ *   * f:is60_hz ATTENTION between letter and number does not add underscore
+ * )
  *
  * Params:
  * source = Structure to copy
@@ -650,19 +666,19 @@ condition:
  * The names of the redis variables to be used are the names of the members in snake_case with optional prefix.
  *
  * If T is a structure:
- * --------------------
+ * ```
  * struct Foo {
  *   int fooName;
  * }
- * --------------------
+ * ```
  *
- *Then `copyToStruct` copies the value of the variable `<prefix>foo_name` to foo.fooName
+ * Then `copyToStruct` copies the value of the variable `<prefix>foo_name` to foo.fooName
  *
  *
  * Params:
- * redis = Database from which to read the variables
- * target = Structure that receives the values
- * prefix = Prefix to be added to the variable names
+ *  redis = Database from which to read the variables
+ *  target = Structure that receives the values
+ *  prefix = Prefix to be added to the variable names
  */
 void copyToStruct(T)(Redis redis, ref T target, string prefix) {
    import std.traits : hasMember;
@@ -685,6 +701,7 @@ void copyToStruct(T)(Redis redis, ref T target, string prefix) {
    }
 }
 
+///
 @("copy2struct")
 unittest {
    Redis redis = new Redis("localhost", 6379);
@@ -742,6 +759,7 @@ string camelCaseToSnake(in string s) @safe pure {
          }).join;
 }
 
+///
 @("snake")
 unittest {
    assert("ABCD".camelCaseToSnake == "abcd");
