@@ -592,6 +592,7 @@ unittest {
  * ```
  *
  * set these redis variables:
+ *
  * $(LIST
  *   * f:int_parm
  *   * f:string_parm
@@ -599,9 +600,10 @@ unittest {
  * )
  *
  * Params:
- * source = Structure to copy
- * target = Database in which to copy the structure
- * prefix = Prefix to be added to the structure members
+ * Params:
+ *  source = Structure to copy
+ *  target = Database in which to copy the structure
+ *  prefix = Prefix to be added to the structure members
  */
 void copyToRedis(T)(T source, Redis target, string prefix) {
    import std.traits : hasMember, isBasicType, isSomeString, FieldNameTuple;
