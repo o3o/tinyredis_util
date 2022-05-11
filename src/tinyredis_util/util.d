@@ -3,6 +3,23 @@ module tinyredis_util.util;
 import tinyredis : Redis, Response;
 import std.datetime.systime : SysTime;
 import std.experimental.logger;
+/**
+ * Copy the value stored at the source key to the destination key.
+ *
+ * Removes the destination key before copying the value to it (REPLACE option)
+ */
+void copy(Redis redis, in string source, in string destination) {
+   redis.send("COPY", source, destination, "REPLACE");
+}
+unittest {
+   import std.conv : to;
+   Redis redis = new Redis();
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+   redis.set!string("dolly", "sheep");
+   redis.copy("dolly", "clone");
+   assert(redis.get!string("clone") == "sheep");
+}
 
 /**
  * Set a Redis variable.
@@ -20,6 +37,21 @@ void set(T)(Redis redis, string key, T value) {
       redis.send("SET", key, value);
    }
 }
+unittest {
+   import std.conv : to;
+   Redis redis = new Redis();
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+   enum Status {
+      idle,
+      setET,
+      openBypass
+   }
+   redis.set!string("status", Status.openBypass.to!string());
+   assert(redis.get!string("status") == "openBypass");
+   assert(redis.get!string("status").to!Status == Status.openBypass);
+}
+
 
 /**
  * psetex works exactly like SETEX with the sole difference that the expire time is specified in milliseconds instead of seconds.
