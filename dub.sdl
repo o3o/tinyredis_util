@@ -5,4 +5,4 @@ copyright "Copyright © 2019, Microline"
 license "Microline"
 targetType "library"
 
-dependency "tinyredis" version="~>2.2.1"
+dependency "tinyredis" version="~>2.3.1"

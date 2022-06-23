@@ -405,11 +405,24 @@ unittest {
    auto epoch = SysTime(DateTime(1970, 1, 1, 1, 1, 1));
    assert(redis.get!SysTime("ut") == epoch);
 }
+
 /**
  * Returns the bit value at offset in the string value stored at key.
  */
 bool getBit(Redis redis, string key, uint offset) {
-   return redis.send("GETBIT", key, offset).toBool;
+   return cast(bool)redis.send("GETBIT", key, offset);
+}
+
+unittest {
+   import std.conv : to;
+   Redis redis = new Redis();
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+   redis.send("SETBIT", "bbb", 3, 1);
+
+   assert(redis.getBit("bbb", 3));
+   assert(!redis.getBit("bbb", 0));
+   assert(!redis.getBit("bbb", 4));
 }
 
 /**
