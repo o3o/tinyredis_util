@@ -11,6 +11,7 @@ import std.experimental.logger;
 void copy(Redis redis, in string source, in string destination) {
    redis.send("COPY", source, destination, "REPLACE");
 }
+
 unittest {
    import std.conv : to;
    Redis redis = new Redis();
@@ -19,6 +20,11 @@ unittest {
    redis.set!string("dolly", "sheep");
    redis.copy("dolly", "clone");
    assert(redis.get!string("clone") == "sheep");
+
+   redis.set!int("question", 42);
+   redis.copy("question", "oflife");
+   assert(redis.get!int("question") == 42);
+   assert(redis.get!int("oflife") == 42);
 }
 
 /**
@@ -651,7 +657,7 @@ unittest {
  *  prefix = Prefix to be added to the structure members
  */
 void copyToRedis(T)(T source, Redis target, string prefix) {
-   import std.traits : hasMember, isBasicType, isSomeString, FieldNameTuple;
+   import std.traits : isBasicType, isSomeString, FieldNameTuple;
 
    foreach (member; FieldNameTuple!T) {
       auto value = __traits(getMember, source, member);
@@ -717,9 +723,8 @@ unittest {
  *  prefix = Prefix to be added to the variable names
  */
 void copyToStruct(T)(Redis redis, ref T target, string prefix) {
-   import std.traits : hasMember;
-
-   foreach (member; __traits(allMembers, T)) {
+   import std.traits: FieldNameTuple;
+   foreach (member; FieldNameTuple!T) {
       auto m = __traits(getMember, target, member);
       string name = member.camelCaseToSnake;
 
@@ -740,6 +745,7 @@ void copyToStruct(T)(Redis redis, ref T target, string prefix) {
 ///
 @("copy2struct")
 unittest {
+   import std.datetime : SysTime;
    Redis redis = new Redis("localhost", 6379);
    redis.send("SELECT", 1);
    redis.send("FLUSHDB");
@@ -756,6 +762,7 @@ unittest {
       double duration;
       bool visible;
       string[] lists;
+      SysTime createdAt;
    }
 
    DummyData dummy;
@@ -817,4 +824,5 @@ unittest {
    assert("pDisAtTCondSp".camelCaseToSnake == "p_dis_at_t_cond_sp");
    assert("res8r1".camelCaseToSnake == "res8r1");
    assert("pid00run".camelCaseToSnake == "pid00run");
+   assert("gas1PMeas".camelCaseToSnake == "gas1_p_meas");
 }
