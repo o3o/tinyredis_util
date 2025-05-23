@@ -134,14 +134,14 @@ unittest {
 }
 
 template commonType(T) {
-   enum commonType = (is(T == bool) || is(T == float) || is(T == double) || is(T == short) || is(T == int)
-            || is(T == long) || is(T == uint) || is(T == ulong) || is(T == string) || is(T == SysTime));
+   enum commonType = (is(T == bool) || is(T == float) || is(T == double)
+         || is(T == short) || is(T == int) || is(T == long)
+         || is(T == ushort) || is(T == uint) || is(T == ulong)
+         || is(T == string) || is(T == SysTime));
 }
 
 /**
  * Convert a string into T type.
- *
- *
  */
 T conv(T)(string input) if (commonType!T) {
    import std.conv : to;
@@ -154,7 +154,7 @@ T conv(T)(string input) if (commonType!T) {
       } else {
          return input == "true" ? 1. : 0.;
       }
-   } else static if ((is(T == int)) || (is(T == long)) || (is(T == uint)) || (is(T == ulong))) {
+   } else static if ((is(T == short) || is(T == int)) || (is(T == long)) || is(T == ushort) || (is(T == uint)) || (is(T == ulong))) {
       if (input.isNumeric) {
          return input.to!(double)
             .to!(T);
@@ -452,6 +452,14 @@ void setBit(Redis redis, string key, uint offset, bool value) {
 bool bts(Redis redis, string key, uint bitnum) {
    bool b = redis.getBit(key, bitnum);
    redis.send("SETBIT", key, bitnum, 1);
+   return b;
+}
+
+alias testAndSet = test!true;
+alias testAndReset = test!false;
+bool test(bool T)(Redis redis, string key) {
+   bool b = redis.get!bool(key);
+   redis.set!bool(key, T);
    return b;
 }
 
