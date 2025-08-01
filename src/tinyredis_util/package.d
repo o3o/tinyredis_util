@@ -1,4 +1,4 @@
-module tinyredis_util.util;
+module tinyredis_util;
 
 import tinyredis : Redis, Response;
 import std.datetime.systime : SysTime;
@@ -131,6 +131,70 @@ unittest {
    assert(h1 == "12");
    string h2 = redis.hget!string("hh", "b");
    assert(h2 == "11");
+}
+
+/**
+ * Get a Redis variable
+ *
+ * Params:
+ *  redis = Database
+ *  key = Variable name
+ */
+string asString(string K)(Redis redis) {
+   return redis.send!string("GET", K);
+}
+
+
+double asDouble(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!double(reply);
+}
+
+@("asdouble")
+unittest {
+   import std.datetime : DateTime;
+
+   auto redis = new Redis("localhost", 6379);
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.send("SET", "delete_me", 3.14);
+   assert(redis.asString!("delete_me") == "3.14");
+   assert(redis.asInt!("delete_me") == 3);
+   assert(redis.asDouble!("delete_me") == 3.14);
+   assert(redis.asBool!("delete_me"));
+   redis.send("SET", "delete_me", 0.);
+   assert(!redis.asBool!("delete_me"));
+}
+
+int asInt(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!int(reply);
+}
+
+uint asUInt(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!uint(reply);
+}
+short asShort(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!short(reply);
+}
+
+ushort asUShort(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!ushort(reply);
+}
+
+size_t asSZ(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!size_t(reply);
+}
+
+
+bool asBool(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!bool(reply);
 }
 
 template commonType(T) {
@@ -475,6 +539,18 @@ bool testAndSet(string K)(Redis redis) {
 }
 
 
+///
+unittest {
+   auto redis = new Redis();
+   redis.send("SELECT", 1);
+   redis.send("FLUSHDB");
+
+   redis.set!bool("vero", true);
+   assert(redis.testAndReset!"vero");
+   assert(!redis.get!bool("vero"));
+   assert(!redis.testAndSet!"vero");
+   assert(redis.get!bool("vero"));
+}
 
 /**
  * Tests and resets (sets to 0) the bit.
