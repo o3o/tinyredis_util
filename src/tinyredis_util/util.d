@@ -455,13 +455,26 @@ bool bts(Redis redis, string key, uint bitnum) {
    return b;
 }
 
-alias testAndSet = test!true;
-alias testAndReset = test!false;
 bool test(bool T)(Redis redis, string key) {
    bool b = redis.get!bool(key);
    redis.set!bool(key, T);
    return b;
 }
+
+
+bool testAndReset(string K)(Redis redis) {
+   bool b = redis.get!bool(K);
+   redis.set!bool(K, false);
+   return b;
+}
+
+bool testAndReset(string K)(Redis redis) {
+   bool b = redis.get!bool(K);
+   redis.set!bool(K, true);
+   return b;
+}
+
+
 
 /**
  * Tests and resets (sets to 0) the bit.
