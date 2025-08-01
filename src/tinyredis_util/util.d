@@ -468,7 +468,7 @@ bool testAndReset(string K)(Redis redis) {
    return b;
 }
 
-bool testAndReset(string K)(Redis redis) {
+bool testAndSet(string K)(Redis redis) {
    bool b = redis.get!bool(K);
    redis.set!bool(K, true);
    return b;
