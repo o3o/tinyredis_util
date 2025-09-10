@@ -219,7 +219,7 @@ T conv(T)(string input) if (commonType!T) {
       } else {
          return input == "true" ? 1. : 0.;
       }
-   } else static if ((is(T == short) || is(T == int)) || (is(T == long)) || is(T == ushort) || (is(T == uint)) || (is(T == ulong)) || (is(T == ulong)) ) {
+   } else static if ((is(T == short) || is(T == int)) || (is(T == long)) || is(T == ushort) || (is(T == uint)) || (is(T == ulong)) || (is(T == size_t)) ) {
       if (input.isNumeric) {
          return input.to!(double)
             .to!(T);
