@@ -201,6 +201,7 @@ template commonType(T) {
    enum commonType = (is(T == bool) || is(T == float) || is(T == double)
          || is(T == short) || is(T == int) || is(T == long)
          || is(T == ushort) || is(T == uint) || is(T == ulong)
+         || is(T == size_t)
          || is(T == string) || is(T == SysTime));
 }
 
@@ -218,7 +219,7 @@ T conv(T)(string input) if (commonType!T) {
       } else {
          return input == "true" ? 1. : 0.;
       }
-   } else static if ((is(T == short) || is(T == int)) || (is(T == long)) || is(T == ushort) || (is(T == uint)) || (is(T == ulong))) {
+   } else static if ((is(T == short) || is(T == int)) || (is(T == long)) || is(T == ushort) || (is(T == uint)) || (is(T == ulong)) || (is(T == ulong)) ) {
       if (input.isNumeric) {
          return input.to!(double)
             .to!(T);
