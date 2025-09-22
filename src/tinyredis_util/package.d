@@ -167,6 +167,16 @@ unittest {
    assert(!redis.asBool!("delete_me"));
 }
 
+int asLong(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!long(reply);
+}
+
+int asULong(string K)(Redis redis) {
+   string reply = redis.send!string("GET", K);
+   return conv!ulong(reply);
+}
+
 int asInt(string K)(Redis redis) {
    string reply = redis.send!string("GET", K);
    return conv!int(reply);
